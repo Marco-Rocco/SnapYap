@@ -5,7 +5,7 @@
 //  Created by Elizbar Kheladze on 08/12/25.
 //
 
-import AVFoundation
+internal import AVFoundation
 import Combine
 import Foundation
 

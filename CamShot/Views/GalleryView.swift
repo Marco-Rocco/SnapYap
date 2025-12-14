@@ -85,7 +85,7 @@ struct GalleryView: View {
                 }
                 .padding(.bottom, 20)
             }
-            .background(Color(red: 231/255, green: 111/255, blue: 95/255))
+            .background(Color.main)
             .navigationTitle("Gallery")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
