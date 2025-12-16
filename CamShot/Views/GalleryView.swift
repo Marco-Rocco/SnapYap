@@ -27,12 +27,12 @@ struct GalleryView: View {
     var groupedItems: [MonthSection] {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM yyyy"
-        
+
         let grouped = Dictionary(grouping: items) { item in
             formatter.string(from: item.timestamp)
         }
-        
-        return grouped.map { (key, value) in
+
+        return grouped.map { key, value in
             MonthSection(title: key, items: value)
         }.sorted { section1, section2 in
             guard let first1 = section1.items.first, let first2 = section2.items.first else { return false }
@@ -44,10 +44,8 @@ struct GalleryView: View {
         NavigationStack {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 20) {
-                    
                     ForEach(groupedItems) { section in
                         VStack(alignment: .leading, spacing: 10) {
-
                             Text(section.title)
                                 .font(.title3)
                                 .fontWeight(.bold)
@@ -62,10 +60,14 @@ struct GalleryView: View {
                                             PolaroidFrame(
                                                 image: uiImage,
                                                 audioData: item.audioData,
+                                                waveform: item.waveform,
                                                 blurAmount: 0,
                                                 showAudioControls: true,
                                                 enableShadow: true,
-                                                isCompact: true
+                                                isCompact: true,
+                                                onWaveformGenerated: { samples in
+                                                    item.waveform = samples
+                                                }
                                             )
                                         }
                                     }

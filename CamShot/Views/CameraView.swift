@@ -45,11 +45,12 @@ class CameraModel: NSObject, ObservableObject {
         }
         
         let device = AVCaptureDevice.default(deviceType, for: .video, position: position)
-                    ?? AVCaptureDevice.default(for: .video)
+            ?? AVCaptureDevice.default(for: .video)
         
         if let device = device,
            let input = try? AVCaptureDeviceInput(device: device),
-           session.canAddInput(input) {
+           session.canAddInput(input)
+        {
             session.addInput(input)
         }
         

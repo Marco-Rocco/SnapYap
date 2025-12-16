@@ -140,7 +140,9 @@ struct CaptureFlowView: View {
         }
         .onAppear {
             audioManager.onRecordingFinished = { audioData in
-                finishRecordingAndSave(audioData: audioData)
+                Task {
+                    await finishRecordingAndSave(audioData: audioData)
+                }
             }
         }
         .onChange(of: camera.capturedImage) { newImage in
@@ -154,7 +156,7 @@ struct CaptureFlowView: View {
     
     var cameraControls: some View {
         VStack {
-            HStack{
+            HStack {
                 Button { dismiss() } label: {
                     ZStack {
                         Circle()
@@ -228,7 +230,9 @@ struct CaptureFlowView: View {
                 } else {
                     if canStopRecording {
                         let data = audioManager.stopRecording()
-                        finishRecordingAndSave(audioData: data)
+                        Task {
+                            await finishRecordingAndSave(audioData: data)
+                        }
                     }
                 }
             } label: {
@@ -278,14 +282,31 @@ struct CaptureFlowView: View {
         }
     }
     
-    private func finishRecordingAndSave(audioData: Data?) {
+    private func finishRecordingAndSave(audioData: Data?) async {
         guard let image = capturedImage,
               let audioData = audioData,
               let imageData = image.jpegData(compressionQuality: 0.8) else { return }
+
+        var waveformSamples: [Float]?
+
+        let tempAudioURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".m4a")
+        do {
+            try audioData.write(to: tempAudioURL)
+            let asset = AVURLAsset(url: tempAudioURL)
+
+            if let audioInfo = try SignalProcessingHelper.samples(asset) {
+                let targetWaveformBarCount = 100
+                waveformSamples = try await SignalProcessingHelper.downsample(audioInfo.samples, count: targetWaveformBarCount)
+            }
+        } catch {
+            print("Error generating waveform samples: \(error)")
+        }
         
-        let newItem = Item(imageData: imageData, audioData: audioData)
+        try? FileManager.default.removeItem(at: tempAudioURL)
+
+        let newItem = Item(imageData: imageData, audioData: audioData, waveform: waveformSamples)
         modelContext.insert(newItem)
-        
+
         isRecording = false
         dismiss()
     }

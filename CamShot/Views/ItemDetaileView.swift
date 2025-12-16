@@ -54,9 +54,13 @@ struct ItemDetailView: View {
                                         PolaroidFrame(
                                             image: uiImage,
                                             audioData: item.audioData,
+                                            waveform: item.waveform,
                                             blurAmount: 0,
                                             showAudioControls: true,
-                                            enableShadow: false
+                                            enableShadow: false,
+                                            onWaveformGenerated: { samples in
+                                                item.waveform = samples
+                                            }
                                         )
                                     },
                                     back: {
@@ -66,23 +70,25 @@ struct ItemDetailView: View {
                                                 .foregroundColor(.black)
                                                 .padding(.leading, 20)
                                                 .padding(.bottom, 12)
-                                            
-                                            .tag(item.id)
+                                                .tag(item.id)
                                             PolaroidFrame(
                                                 image: uiImage,
                                                 audioData: item.audioData,
+                                                waveform: item.waveform,
                                                 blurAmount: 0,
                                                 showAudioControls: true,
-                                                enableShadow: false
+                                                enableShadow: false,
+                                                onWaveformGenerated: { samples in
+                                                    item.waveform = samples
+                                                }
                                             ).scaleEffect(x: -1)
                                                 .opacity(0.1)
                                                 .overlay {
                                                     Color.white
                                                 }.opacity(0.6)
-                                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                                                .clipShape(RoundedRectangle(cornerRadius: 10))
                                         }
                                     }
-                                    
                                 )
                                 .padding(.horizontal, 20)
                                 
@@ -145,6 +151,7 @@ struct ItemDetailView: View {
 }
 
 // MARK: - FlipCard inline view
+
 private struct FlipCard<Front: View, Back: View>: View {
     @Binding var isFlipped: Bool
     let front: Front

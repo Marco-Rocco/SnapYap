@@ -14,11 +14,13 @@ final class Item {
     var timestamp: Date
     @Attribute(.externalStorage) var imageData: Data
     var audioData: Data?
+    var waveform: [Float]?
 
-    init(imageData: Data, audioData: Data?) {
+    init(imageData: Data, audioData: Data?, waveform: [Float]? = nil) {
         self.id = UUID()
         self.timestamp = Date()
         self.imageData = imageData
         self.audioData = audioData
+        self.waveform = waveform
     }
 }
