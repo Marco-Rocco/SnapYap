@@ -34,6 +34,7 @@ struct ItemDetailView: View {
                                     showAudioControls: true,
                                     enableShadow: false
                                 )
+                                Text("\(item.timestamp)")
                                 .padding(.horizontal, 20)
                                 Spacer()
                             }

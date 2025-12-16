@@ -31,71 +31,9 @@ struct CaptureFlowView: View {
         return audioManager.currentTime >= 8.0
     }
     
-    var body: some View {
+    var topCameraControls: some View {
         ZStack {
-            bgColor.ignoresSafeArea()
-            
-            VStack {
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(capturedImage == nil ? darkGreen : Color.clear)
-                    .frame(height: 60)
-                    .padding(.horizontal)
-                    .padding(.top, 10)
-                    .opacity(capturedImage == nil ? 1 : 0)
-                
-                Spacer()
-                
-                ZStack {
-                    if let image = capturedImage {
-                        Image(uiImage: image)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 340, height: 340)
-                            .blur(radius: currentBlur)
-                            .clipShape(RoundedRectangle(cornerRadius: 35))
-                    } else {
-                        CameraPreview(camera: camera)
-                            .frame(width: 340, height: 340)
-                            .clipShape(RoundedRectangle(cornerRadius: 35))
-                            .onAppear { camera.checkPermissions() }
-                    }
-                }
-                .overlay(
-                    RoundedRectangle(cornerRadius: 35)
-                        .stroke(Color.white, lineWidth: 6)
-                )
-                .shadow(radius: 10)
-                .animation(.easeInOut(duration: 0.2), value: capturedImage)
-                
-                Spacer()
-                
-                ZStack {
-                    if capturedImage == nil {
-                        cameraControls
-                    } else {
-                        audioControls
-                    }
-                }
-                .padding(.bottom, 30)
-            }
-        }
-        .onAppear {
-            audioManager.onRecordingFinished = { audioData in
-                finishRecordingAndSave(audioData: audioData)
-            }
-        }
-        .onChange(of: camera.capturedImage) { newImage in
-            if let img = newImage {
-                withAnimation(.snappy) {
-                    self.capturedImage = img
-                }
-            }
-        }
-    }
-    
-    var cameraControls: some View {
-        VStack {
-            HStack(spacing: 40) {
+            HStack(spacing: 70) {
                 Button { camera.toggleFlash() } label: {
                     ZStack {
                         Circle()
@@ -143,7 +81,7 @@ struct CaptureFlowView: View {
                                     .stroke(borderGreen, lineWidth: 3)
                             )
                         
-                        Image(systemName: "arrow.triangle.2.circlepath")
+                        Image(systemName: "timer")
                             .font(.system(size: 24))
                             .foregroundColor(accentColor)
                             .rotationEffect(.degrees(camera.isFrontCamera ? 180 : 0))
@@ -151,22 +89,120 @@ struct CaptureFlowView: View {
                     }
                 }
             }
-            .padding(.bottom, 20)
-            
-            Button { camera.takePic() } label: {
+            .padding(.top, 35)
+            .padding(.bottom, 60)
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            bgColor.ignoresSafeArea()
+            VStack {
+                topCameraControls
+                    .opacity(capturedImage == nil ? 1 : 0)
+                    .allowsHitTesting(capturedImage == nil)
+                
                 ZStack {
-                    Circle()
-                        .fill(darkGreen)
-                        .frame(width: 100, height: 100)
-                        .overlay(
-                            Circle()
-                                .stroke(borderGreen, lineWidth: 4)
-                        )
-                        .shadow(color: .black.opacity(0.3), radius: 5, x: 0, y: 5)
-                    
-                    Circle()
-                        .fill(darkGreen.opacity(0.8))
-                        .frame(width: 70, height: 70)
+                    if let image = capturedImage {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 340, height: 340)
+                            .blur(radius: currentBlur)
+                            .clipShape(RoundedRectangle(cornerRadius: 35))
+                    } else {
+                        CameraPreview(camera: camera)
+                            .frame(width: 340, height: 340)
+                            .clipShape(RoundedRectangle(cornerRadius: 35))
+                            .onAppear { camera.checkPermissions() }
+                    }
+                }
+                .overlay(
+                    RoundedRectangle(cornerRadius: 35)
+                        .stroke(Color.white, lineWidth: 6)
+                )
+                .shadow(radius: 10)
+                .animation(.easeInOut(duration: 0.2), value: capturedImage)
+                
+                Spacer()
+                
+                ZStack {
+                    if capturedImage == nil {
+                        cameraControls
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    } else {
+                        audioControls
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
+                }
+                .padding(.bottom, 30)
+            }
+        }
+        .onAppear {
+            audioManager.onRecordingFinished = { audioData in
+                finishRecordingAndSave(audioData: audioData)
+            }
+        }
+        .onChange(of: camera.capturedImage) { newImage in
+            if let img = newImage {
+                withAnimation(.snappy) {
+                    self.capturedImage = img
+                }
+            }
+        }
+    }
+    
+    var cameraControls: some View {
+        VStack {
+            HStack{
+                Button { dismiss() } label: {
+                    ZStack {
+                        Circle()
+                            .fill(darkGreen)
+                            .frame(width: 60, height: 60)
+                            .overlay(
+                                Circle()
+                                    .stroke(borderGreen, lineWidth: 3)
+                            )
+                        
+                        Image(systemName: "photo.on.rectangle.angled.fill")
+                            .font(.system(size: 24, weight: .semibold))
+                            .foregroundColor(accentColor)
+                    }
+                }
+                
+                Button { camera.takePic() } label: {
+                    ZStack {
+                        Circle()
+                            .fill(.darkerSub)
+                            .frame(width: 100, height: 100)
+                        Circle()
+                            .fill(.main)
+                            .frame(width: 85, height: 85)
+                        
+                        Circle()
+                            .fill(.main)
+                            .frame(width: 70, height: 70)
+                            .shadow(color: .black, radius: 5)
+                    }
+                }
+                .padding(35)
+                Button { camera.flipCamera() } label: {
+                    ZStack {
+                        Circle()
+                            .fill(darkGreen)
+                            .frame(width: 60, height: 60)
+                            .overlay(
+                                Circle()
+                                    .stroke(borderGreen, lineWidth: 3)
+                            )
+                        
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .font(.system(size: 24))
+                            .foregroundColor(accentColor)
+                            .rotationEffect(.degrees(camera.isFrontCamera ? 180 : 0))
+                            .animation(.spring(), value: camera.isFrontCamera)
+                    }
                 }
             }
         }
