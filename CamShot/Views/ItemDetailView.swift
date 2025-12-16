@@ -11,34 +11,34 @@ import SwiftUI
 struct ItemDetailView: View {
     @Query(sort: \Item.timestamp, order: .reverse) private var items: [Item]
     @StateObject private var viewModel: ItemDetailViewModel
-    
+
     let thumbnailSize: CGFloat = 40
     let thumbnailSpacing: CGFloat = 8
-    
+
     init(selectedID: UUID) {
         _viewModel = StateObject(wrappedValue: ItemDetailViewModel(selectedID: selectedID))
     }
-    
+
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
         f.locale = .current
         f.setLocalizedDateFormatFromTemplate("EEE d MMM, HH:mm")
         return f
     }()
-    
+
     var body: some View {
         ZStack {
             Color.main.ignoresSafeArea()
-            
+
             VStack(spacing: 0) {
                 Spacer()
-                
+
                 TabView(selection: $viewModel.selectedID) {
                     ForEach(items) { item in
                         if let uiImage = UIImage(data: item.imageData) {
                             VStack {
                                 Spacer()
-                                
+
                                 // Flip card wrapper
                                 FlipCard(
                                     isFlipped: Binding(
@@ -85,7 +85,7 @@ struct ItemDetailView: View {
                                     }
                                 )
                                 .padding(.horizontal, 20)
-                                
+
                                 Spacer()
                             }
                             .tag(item.id)
@@ -93,14 +93,14 @@ struct ItemDetailView: View {
                     }
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
-                
+
                 GeometryReader { geo in
                     ScrollViewReader { proxy in
                         ScrollView(.horizontal, showsIndicators: false) {
                             LazyHStack(spacing: thumbnailSpacing) {
                                 Spacer()
                                     .frame(width: max(0, geo.size.width / 2 - thumbnailSize / 2 - thumbnailSpacing))
-                                
+
                                 ForEach(items) { item in
                                     if let uiImage = UIImage(data: item.imageData) {
                                         Button {
@@ -119,7 +119,7 @@ struct ItemDetailView: View {
                                         .id(item.id)
                                     }
                                 }
-                                
+
                                 Spacer()
                                     .frame(width: max(0, geo.size.width / 2 - thumbnailSize / 2 - thumbnailSpacing))
                             }
@@ -150,11 +150,11 @@ private struct FlipCard<Front: View, Back: View>: View {
     @Binding var isFlipped: Bool
     let front: Front
     let back: Back
-    
+
     // Animation state
     @State private var rotation: Double = 0
     @State private var pressing: Bool = false
-    
+
     init(
         isFlipped: Binding<Bool>,
         @ViewBuilder front: () -> Front,
@@ -164,7 +164,7 @@ private struct FlipCard<Front: View, Back: View>: View {
         self.front = front()
         self.back = back()
     }
-    
+
     var body: some View {
         ZStack {
             // Front (only the card flips)
@@ -173,7 +173,7 @@ private struct FlipCard<Front: View, Back: View>: View {
                 .accessibilityHidden(!isFrontVisible)
                 .rotation3DEffect(.degrees(rotation), axis: (x: 0, y: 1, z: 0), perspective: 0.6)
                 .animation(.easeInOut(duration: 0.35), value: rotation)
-            
+
             // Back (same)
             ZStack {
                 back
@@ -206,7 +206,7 @@ private struct FlipCard<Front: View, Back: View>: View {
         .scaleEffect(pressing ? 0.98 : 1.0)
         .animation(.spring(response: 0.25, dampingFraction: 0.8), value: pressing)
     }
-    
+
     private var isFrontVisible: Bool {
         rotation < 90
     }
