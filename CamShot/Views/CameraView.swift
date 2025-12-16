@@ -82,7 +82,16 @@ class CameraModel: NSObject, ObservableObject {
     func flipCamera() {
         isFrontCamera.toggle()
         let position: AVCaptureDevice.Position = isFrontCamera ? .front : .back
-        configureSession(deviceType: .builtInWideAngleCamera, position: position)
+        
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            self?.configureSession(deviceType: .builtInWideAngleCamera, position: position)
+        }
+    }
+    
+    func stopSession() {
+        if session.isRunning {
+            session.stopRunning()
+        }
     }
     
     func setZoom(factor: CGFloat) {

@@ -78,8 +78,6 @@ struct ItemDetailView: View {
                                                 .opacity(0.8)
                                                 .font(.system(size: 28, weight: .bold))
                                                 .foregroundColor(.black)
-                                                .padding(.leading, 20)
-                                                .padding(.bottom, 12)
                                                 .tag(item.id)
                                         }
                                     }

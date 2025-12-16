@@ -12,16 +12,16 @@ import SwiftUI
 struct CaptureFlowView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
-    
+
     @StateObject private var viewModel = CaptureViewModel()
     @StateObject private var camera = CameraModel()
-    
+
     let bgColor = Color.main
     let darkGreen = Color.sub
     let borderGreen = Color.darkerSub
     let accentColor = Color.accent
     let recordRed = Color.recording
-    
+
     var topCameraControls: some View {
         ZStack {
             HStack(spacing: 70) {
@@ -34,13 +34,13 @@ struct CaptureFlowView: View {
                                 Circle()
                                     .stroke(borderGreen, lineWidth: 3)
                             )
-                        
+
                         Image(systemName: "bolt.fill")
                             .font(.system(size: 24))
                             .foregroundColor(camera.flashMode == .on ? .yellow : accentColor)
                     }
                 }
-                
+
                 Button {
                     withAnimation {
                         viewModel.zoomLevel = (viewModel.zoomLevel == 0 ? 1 : 0)
@@ -55,14 +55,14 @@ struct CaptureFlowView: View {
                                 Circle()
                                     .stroke(borderGreen, lineWidth: 3)
                             )
-                        
+
                         Text(viewModel.zoomLevel == 0 ? "0.5" : "1x")
                             .font(.system(size: 20, weight: .bold))
                             .foregroundColor(accentColor)
                     }
                 }
-                
-                Button { camera.flipCamera() } label: {
+
+                Button { print("timer has to be implemented") } label: {
                     ZStack {
                         Circle()
                             .fill(darkGreen)
@@ -71,7 +71,7 @@ struct CaptureFlowView: View {
                                 Circle()
                                     .stroke(borderGreen, lineWidth: 3)
                             )
-                        
+
                         Image(systemName: "timer")
                             .font(.system(size: 24))
                             .foregroundColor(accentColor)
@@ -92,7 +92,7 @@ struct CaptureFlowView: View {
                 topCameraControls
                     .opacity(viewModel.capturedImage == nil ? 1 : 0)
                     .allowsHitTesting(viewModel.capturedImage == nil)
-                
+
                 ZStack {
                     if let image = viewModel.capturedImage {
                         Image(uiImage: image)
@@ -106,6 +106,7 @@ struct CaptureFlowView: View {
                             .frame(width: 340, height: 340)
                             .clipShape(RoundedRectangle(cornerRadius: 35))
                             .onAppear { camera.checkPermissions() }
+                            .onDisappear { camera.stopSession() }
                     }
                 }
                 .overlay(
@@ -114,9 +115,9 @@ struct CaptureFlowView: View {
                 )
                 .shadow(radius: 10)
                 .animation(.easeInOut(duration: 0.2), value: viewModel.capturedImage)
-                
+
                 Spacer()
-                
+
                 ZStack {
                     if viewModel.capturedImage == nil {
                         cameraControls
@@ -149,7 +150,7 @@ struct CaptureFlowView: View {
             }
         }
     }
-    
+
     var cameraControls: some View {
         VStack {
             HStack {
@@ -162,13 +163,13 @@ struct CaptureFlowView: View {
                                 Circle()
                                     .stroke(borderGreen, lineWidth: 3)
                             )
-                        
+
                         Image(systemName: "photo.on.rectangle.angled.fill")
                             .font(.system(size: 24, weight: .semibold))
                             .foregroundColor(accentColor)
                     }
                 }
-                
+
                 Button { camera.takePic() } label: {
                     ZStack {
                         Circle()
@@ -177,7 +178,7 @@ struct CaptureFlowView: View {
                         Circle()
                             .fill(.main)
                             .frame(width: 85, height: 85)
-                        
+
                         Circle()
                             .fill(.main)
                             .frame(width: 70, height: 70)
@@ -194,7 +195,7 @@ struct CaptureFlowView: View {
                                 Circle()
                                     .stroke(borderGreen, lineWidth: 3)
                             )
-                        
+
                         Image(systemName: "arrow.triangle.2.circlepath")
                             .font(.system(size: 24))
                             .foregroundColor(accentColor)
@@ -205,7 +206,7 @@ struct CaptureFlowView: View {
             }
         }
     }
-    
+
     var audioControls: some View {
         VStack(spacing: 20) {
             if viewModel.isRecording {
@@ -214,12 +215,12 @@ struct CaptureFlowView: View {
                     .foregroundColor(.white)
                     .transition(.opacity)
             } else {
-                Text("Hold to Record & Reveal")
+                Text("Tap to Record & Reveal")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.white.opacity(0.8))
                     .transition(.opacity)
             }
-            
+
             Button {
                 if !viewModel.isRecording {
                     viewModel.startRecordingProcess()
@@ -235,12 +236,12 @@ struct CaptureFlowView: View {
                     Circle()
                         .stroke(recordRed.opacity(0.4), lineWidth: 4)
                         .frame(width: 90, height: 90)
-                    
+
                     Circle()
                         .fill(recordRed)
                         .frame(width: 70, height: 70)
                         .shadow(radius: 4)
-                    
+
                     if viewModel.isRecording {
                         if viewModel.canStopRecording {
                             RoundedRectangle(cornerRadius: 4)
@@ -262,7 +263,7 @@ struct CaptureFlowView: View {
         }
         .frame(height: 180)
     }
-    
+
     private func formatTime(_ time: Double) -> String {
         let seconds = Int(time)
         return String(format: "00:%02d", seconds)
