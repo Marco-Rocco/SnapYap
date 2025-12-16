@@ -10,6 +10,8 @@ import SwiftUI
 
 @main
 struct CamShotApp: App {
+    @StateObject private var audioManager = AudioManager()
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
@@ -26,6 +28,7 @@ struct CamShotApp: App {
     var body: some Scene {
         WindowGroup {
             GalleryView()
+                .environmentObject(audioManager)
         }
         .modelContainer(sharedModelContainer)
     }

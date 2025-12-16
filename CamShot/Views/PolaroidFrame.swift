@@ -16,9 +16,9 @@ struct PolaroidFrame: View {
     var showAudioControls: Bool = true
     var enableShadow: Bool = true
     var isCompact: Bool = false
-    var onWaveformGenerated: (([Float]) -> Void)? = nil
+    var id: UUID?
     
-    @StateObject private var audioManager = AudioManager()
+    @EnvironmentObject var audioManager: AudioManager
     @State private var samples: [Float] = []
     
     var body: some View {
@@ -42,13 +42,13 @@ struct PolaroidFrame: View {
                 if showAudioControls, let data = audioData {
                     HStack(spacing: isCompact ? 8 : 16) {
                         Button {
-                            if audioManager.isPlaying {
+                            if audioManager.isPlaying && audioManager.currentID == id {
                                 audioManager.stopPlayback()
                             } else {
-                                audioManager.startPlayback(data: data)
+                                audioManager.startPlayback(data: data, id: id)
                             }
                         } label: {
-                            Image(systemName: audioManager.isPlaying ? "pause.fill" : "play.fill")
+                            Image(systemName: (audioManager.isPlaying && audioManager.currentID == id) ? "pause.fill" : "play.fill")
                                 .font(.system(size: isCompact ? 14 : 20))
                                 .foregroundColor(.black)
                         }
@@ -90,17 +90,10 @@ struct PolaroidFrame: View {
             x: 0,
             y: 5
         )
-        .onDisappear {
-            audioManager.stopPlayback()
-        }
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .onAppear {
             if let samples = waveform {
                 self.samples = samples
-            } else if let audioData = audioData, !audioData.isEmpty {
-                Task {
-                    await generateWaveform(from: audioData)
-                }
             }
         }
     }
@@ -132,6 +125,8 @@ struct PolaroidFrame: View {
     }
     
     private func barColor(for index: Int, total: Int) -> Color {
+        guard audioManager.currentID == id else { return Color.gray.opacity(0.3) }
+        
         let duration = Double(audioManager.duration)
         let currentTime = Double(audioManager.currentTime)
             
@@ -141,27 +136,5 @@ struct PolaroidFrame: View {
         let thresholdIndex = Int(progress * Double(total))
             
         return index <= thresholdIndex ? Color.black : Color.gray.opacity(0.3)
-    }
-
-    private func generateWaveform(from data: Data) async {
-        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".m4a")
-        do {
-            try data.write(to: tempURL)
-            let asset = AVURLAsset(url: tempURL)
-            
-            guard let audioInfo = try SignalProcessingHelper.samples(asset) else { return }
-            
-            let targetCount = 100
-            let newSamples = try await SignalProcessingHelper.downsample(audioInfo.samples, count: targetCount)
-            
-            await MainActor.run {
-                self.samples = newSamples
-                self.onWaveformGenerated?(newSamples)
-            }
-            
-            try? FileManager.default.removeItem(at: tempURL)
-        } catch {
-            print("Error generating waveform: \(error)")
-        }
     }
 }

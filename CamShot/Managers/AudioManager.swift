@@ -5,7 +5,7 @@
 //  Created by Elizbar Kheladze on 08/12/25.
 //
 
-internal import AVFoundation
+import AVFoundation
 import Combine
 import Foundation
 
@@ -15,6 +15,7 @@ class AudioManager: NSObject, ObservableObject, AVAudioRecorderDelegate, AVAudio
     
     @Published var duration: TimeInterval = 0.0
     @Published var currentTime: TimeInterval = 0.0
+    @Published var currentID: UUID?
     
     private var audioRecorder: AVAudioRecorder?
     private var audioPlayer: AVAudioPlayer?
@@ -47,6 +48,7 @@ class AudioManager: NSObject, ObservableObject, AVAudioRecorderDelegate, AVAudio
     func startRecording() {
         currentTime = 0.0
         duration = 0.0
+        currentID = nil
         
         let fileName = FileManager.default.temporaryDirectory.appendingPathComponent("temp_recording.m4a")
         let settings: [String: Any] = [
@@ -78,9 +80,9 @@ class AudioManager: NSObject, ObservableObject, AVAudioRecorderDelegate, AVAudio
         return try? Data(contentsOf: url)
     }
     
-    // MARK:  Playback
+    // MARK: Playback
     
-    func startPlayback(data: Data) {
+    func startPlayback(data: Data, id: UUID? = nil) {
         stopPlayback()
         
         do {
@@ -88,6 +90,7 @@ class AudioManager: NSObject, ObservableObject, AVAudioRecorderDelegate, AVAudio
             audioPlayer?.delegate = self
             
             duration = audioPlayer?.duration ?? 0.0
+            currentID = id
             
             audioPlayer?.play()
             isPlaying = true
@@ -100,10 +103,11 @@ class AudioManager: NSObject, ObservableObject, AVAudioRecorderDelegate, AVAudio
     func stopPlayback() {
         audioPlayer?.stop()
         isPlaying = false
+        currentID = nil
         stopTimer()
     }
     
-    // MARK:  Timer Logic
+    // MARK: Timer Logic
     
     private func startTimer() {
         timer?.invalidate()
@@ -131,6 +135,7 @@ class AudioManager: NSObject, ObservableObject, AVAudioRecorderDelegate, AVAudio
     
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         isPlaying = false
+        currentID = nil
         stopTimer()
         currentTime = 0.0
     }

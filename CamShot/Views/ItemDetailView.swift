@@ -1,5 +1,5 @@
 //
-//  ItemDetaileView.swift
+//  ItemDetailView.swift
 //  CamShot
 //
 //  Created by Elizbar Kheladze on 08/12/25.
@@ -10,10 +10,14 @@ import SwiftUI
 
 struct ItemDetailView: View {
     @Query(sort: \Item.timestamp, order: .reverse) private var items: [Item]
-    @State var selectedID: UUID
+    @StateObject private var viewModel: ItemDetailViewModel
     
     let thumbnailSize: CGFloat = 40
     let thumbnailSpacing: CGFloat = 8
+    
+    init(selectedID: UUID) {
+        _viewModel = StateObject(wrappedValue: ItemDetailViewModel(selectedID: selectedID))
+    }
     
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -22,9 +26,6 @@ struct ItemDetailView: View {
         return f
     }()
     
-    // Track which card is flipped (by item id)
-    @State private var flippedIDs: Set<UUID> = []
-    
     var body: some View {
         ZStack {
             Color.main.ignoresSafeArea()
@@ -32,7 +33,7 @@ struct ItemDetailView: View {
             VStack(spacing: 0) {
                 Spacer()
                 
-                TabView(selection: $selectedID) {
+                TabView(selection: $viewModel.selectedID) {
                     ForEach(items) { item in
                         if let uiImage = UIImage(data: item.imageData) {
                             VStack {
@@ -41,13 +42,9 @@ struct ItemDetailView: View {
                                 // Flip card wrapper
                                 FlipCard(
                                     isFlipped: Binding(
-                                        get: { flippedIDs.contains(item.id) },
+                                        get: { viewModel.isFlipped(item.id) },
                                         set: { newValue in
-                                            if newValue {
-                                                flippedIDs.insert(item.id)
-                                            } else {
-                                                flippedIDs.remove(item.id)
-                                            }
+                                            viewModel.setFlipped(item.id, isFlipped: newValue)
                                         }
                                     ),
                                     front: {
@@ -58,9 +55,7 @@ struct ItemDetailView: View {
                                             blurAmount: 0,
                                             showAudioControls: true,
                                             enableShadow: false,
-                                            onWaveformGenerated: { samples in
-                                                item.waveform = samples
-                                            }
+                                            id: item.id
                                         )
                                     },
                                     back: {
@@ -78,9 +73,7 @@ struct ItemDetailView: View {
                                                 blurAmount: 0,
                                                 showAudioControls: true,
                                                 enableShadow: false,
-                                                onWaveformGenerated: { samples in
-                                                    item.waveform = samples
-                                                }
+                                                id: item.id
                                             ).scaleEffect(x: -1)
                                                 .opacity(0.1)
                                                 .overlay {
@@ -111,7 +104,7 @@ struct ItemDetailView: View {
                                     if let uiImage = UIImage(data: item.imageData) {
                                         Button {
                                             withAnimation(.easeInOut(duration: 0.2)) {
-                                                selectedID = item.id
+                                                viewModel.selectedID = item.id
                                             }
                                         } label: {
                                             Image(uiImage: uiImage)
@@ -119,8 +112,8 @@ struct ItemDetailView: View {
                                                 .scaledToFill()
                                                 .frame(width: thumbnailSize, height: thumbnailSize)
                                                 .clipped()
-                                                .opacity(selectedID == item.id ? 1.0 : 0.5)
-                                                .border(Color.white, width: selectedID == item.id ? 2 : 0)
+                                                .opacity(viewModel.selectedID == item.id ? 1.0 : 0.5)
+                                                .border(Color.white, width: viewModel.selectedID == item.id ? 2 : 0)
                                         }
                                         .id(item.id)
                                     }
@@ -132,13 +125,13 @@ struct ItemDetailView: View {
                             .padding(.bottom, 20)
                         }
                         .frame(height: 60)
-                        .onChange(of: selectedID) { _, newID in
+                        .onChange(of: viewModel.selectedID) { _, newID in
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 proxy.scrollTo(newID, anchor: .center)
                             }
                         }
                         .onAppear {
-                            proxy.scrollTo(selectedID, anchor: .center)
+                            proxy.scrollTo(viewModel.selectedID, anchor: .center)
                         }
                     }
                 }

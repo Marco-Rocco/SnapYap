@@ -5,31 +5,22 @@
 //  Created by Elizbar Kheladze on 08/12/25.
 //
 
+import AVFoundation
 import SwiftData
 import SwiftUI
-internal import AVFoundation
 
 struct CaptureFlowView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     
-    @State private var capturedImage: UIImage?
-    @State private var isRecording = false
-    @State private var currentBlur: CGFloat = 30.0
-    @State private var zoomLevel: Int = 1
-    
+    @StateObject private var viewModel = CaptureViewModel()
     @StateObject private var camera = CameraModel()
-    @StateObject private var audioManager = AudioManager()
     
     let bgColor = Color.main
     let darkGreen = Color.sub
     let borderGreen = Color.darkerSub
     let accentColor = Color.accent
     let recordRed = Color.recording
-    
-    private var canStopRecording: Bool {
-        return audioManager.currentTime >= 8.0
-    }
     
     var topCameraControls: some View {
         ZStack {
@@ -52,8 +43,8 @@ struct CaptureFlowView: View {
                 
                 Button {
                     withAnimation {
-                        zoomLevel = (zoomLevel == 0 ? 1 : 0)
-                        camera.setZoom(factor: zoomLevel == 0 ? 0.5 : 1.0)
+                        viewModel.zoomLevel = (viewModel.zoomLevel == 0 ? 1 : 0)
+                        camera.setZoom(factor: viewModel.zoomLevel == 0 ? 0.5 : 1.0)
                     }
                 } label: {
                     ZStack {
@@ -65,7 +56,7 @@ struct CaptureFlowView: View {
                                     .stroke(borderGreen, lineWidth: 3)
                             )
                         
-                        Text(zoomLevel == 0 ? "0.5" : "1x")
+                        Text(viewModel.zoomLevel == 0 ? "0.5" : "1x")
                             .font(.system(size: 20, weight: .bold))
                             .foregroundColor(accentColor)
                     }
@@ -99,16 +90,16 @@ struct CaptureFlowView: View {
             bgColor.ignoresSafeArea()
             VStack {
                 topCameraControls
-                    .opacity(capturedImage == nil ? 1 : 0)
-                    .allowsHitTesting(capturedImage == nil)
+                    .opacity(viewModel.capturedImage == nil ? 1 : 0)
+                    .allowsHitTesting(viewModel.capturedImage == nil)
                 
                 ZStack {
-                    if let image = capturedImage {
+                    if let image = viewModel.capturedImage {
                         Image(uiImage: image)
                             .resizable()
                             .scaledToFill()
                             .frame(width: 340, height: 340)
-                            .blur(radius: currentBlur)
+                            .blur(radius: viewModel.currentBlur)
                             .clipShape(RoundedRectangle(cornerRadius: 35))
                     } else {
                         CameraPreview(camera: camera)
@@ -122,12 +113,12 @@ struct CaptureFlowView: View {
                         .stroke(Color.white, lineWidth: 6)
                 )
                 .shadow(radius: 10)
-                .animation(.easeInOut(duration: 0.2), value: capturedImage)
+                .animation(.easeInOut(duration: 0.2), value: viewModel.capturedImage)
                 
                 Spacer()
                 
                 ZStack {
-                    if capturedImage == nil {
+                    if viewModel.capturedImage == nil {
                         cameraControls
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                     } else {
@@ -139,17 +130,22 @@ struct CaptureFlowView: View {
             }
         }
         .onAppear {
-            audioManager.onRecordingFinished = { audioData in
+            viewModel.audioManager.onRecordingFinished = { audioData in
                 Task {
-                    await finishRecordingAndSave(audioData: audioData)
+                    await viewModel.handleRecordingFinished(audioData: audioData, modelContext: modelContext)
                 }
             }
         }
         .onChange(of: camera.capturedImage) { _, newImage in
             if let img = newImage {
                 withAnimation(.snappy) {
-                    self.capturedImage = img
+                    viewModel.capturedImage = img
                 }
+            }
+        }
+        .onChange(of: viewModel.shouldDismiss) { _, shouldDismiss in
+            if shouldDismiss {
+                dismiss()
             }
         }
     }
@@ -212,8 +208,8 @@ struct CaptureFlowView: View {
     
     var audioControls: some View {
         VStack(spacing: 20) {
-            if isRecording {
-                Text("\(formatTime(audioManager.currentTime)) / 00:30")
+            if viewModel.isRecording {
+                Text("\(formatTime(viewModel.audioManager.currentTime)) / 00:30")
                     .font(.system(size: 14, weight: .medium, design: .monospaced))
                     .foregroundColor(.white)
                     .transition(.opacity)
@@ -225,13 +221,12 @@ struct CaptureFlowView: View {
             }
             
             Button {
-                if !isRecording {
-                    startRecordingProcess()
+                if !viewModel.isRecording {
+                    viewModel.startRecordingProcess()
                 } else {
-                    if canStopRecording {
-                        let data = audioManager.stopRecording()
+                    if viewModel.canStopRecording {
                         Task {
-                            await finishRecordingAndSave(audioData: data)
+                            await viewModel.stopRecordingAndSave(modelContext: modelContext)
                         }
                     }
                 }
@@ -246,8 +241,8 @@ struct CaptureFlowView: View {
                         .frame(width: 70, height: 70)
                         .shadow(radius: 4)
                     
-                    if isRecording {
-                        if canStopRecording {
+                    if viewModel.isRecording {
+                        if viewModel.canStopRecording {
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(Color.white)
                                 .frame(width: 24, height: 24)
@@ -263,7 +258,7 @@ struct CaptureFlowView: View {
                     }
                 }
             }
-            .disabled(isRecording && !canStopRecording)
+            .disabled(viewModel.isRecording && !viewModel.canStopRecording)
         }
         .frame(height: 180)
     }
@@ -271,43 +266,5 @@ struct CaptureFlowView: View {
     private func formatTime(_ time: Double) -> String {
         let seconds = Int(time)
         return String(format: "00:%02d", seconds)
-    }
-    
-    private func startRecordingProcess() {
-        isRecording = true
-        audioManager.startRecording()
-        
-        withAnimation(.linear(duration: 8.0)) {
-            currentBlur = 0
-        }
-    }
-    
-    private func finishRecordingAndSave(audioData: Data?) async {
-        guard let image = capturedImage,
-              let audioData = audioData,
-              let imageData = image.jpegData(compressionQuality: 0.8) else { return }
-
-        var waveformSamples: [Float]?
-
-        let tempAudioURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".m4a")
-        do {
-            try audioData.write(to: tempAudioURL)
-            let asset = AVURLAsset(url: tempAudioURL)
-
-            if let audioInfo = try SignalProcessingHelper.samples(asset) {
-                let targetWaveformBarCount = 100
-                waveformSamples = try await SignalProcessingHelper.downsample(audioInfo.samples, count: targetWaveformBarCount)
-            }
-        } catch {
-            print("Error generating waveform samples: \(error)")
-        }
-        
-        try? FileManager.default.removeItem(at: tempAudioURL)
-
-        let newItem = Item(imageData: imageData, audioData: audioData, waveform: waveformSamples)
-        modelContext.insert(newItem)
-
-        isRecording = false
-        dismiss()
     }
 }

@@ -11,40 +11,18 @@ import SwiftUI
 struct GalleryView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Item.timestamp, order: .reverse) private var items: [Item]
-    @State private var showCapture = false
+    @StateObject private var viewModel = GalleryViewModel()
 
     let columns = [
         GridItem(.flexible(), spacing: 16),
         GridItem(.flexible(), spacing: 16)
     ]
 
-    struct MonthSection: Identifiable {
-        let id = UUID()
-        let title: String
-        let items: [Item]
-    }
-
-    var groupedItems: [MonthSection] {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-
-        let grouped = Dictionary(grouping: items) { item in
-            formatter.string(from: item.timestamp)
-        }
-
-        return grouped.map { key, value in
-            MonthSection(title: key, items: value)
-        }.sorted { section1, section2 in
-            guard let first1 = section1.items.first, let first2 = section2.items.first else { return false }
-            return first1.timestamp > first2.timestamp
-        }
-    }
-
     var body: some View {
         NavigationStack {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 20) {
-                    ForEach(groupedItems) { section in
+                    ForEach(viewModel.groupItems(items)) { section in
                         VStack(alignment: .leading, spacing: 10) {
                             Text(section.title)
                                 .font(.title3)
@@ -65,16 +43,14 @@ struct GalleryView: View {
                                                 showAudioControls: true,
                                                 enableShadow: true,
                                                 isCompact: true,
-                                                onWaveformGenerated: { samples in
-                                                    item.waveform = samples
-                                                }
+                                                id: item.id
                                             )
                                         }
                                     }
                                     .buttonStyle(PlainButtonStyle())
                                     .contextMenu {
                                         Button(role: .destructive) {
-                                            deleteItem(item)
+                                            viewModel.deleteItem(item, context: modelContext)
                                         } label: {
                                             Label("Delete", systemImage: "trash")
                                         }
@@ -95,22 +71,16 @@ struct GalleryView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
-                        showCapture = true
+                        viewModel.showCapture = true
                     } label: {
                         Image(systemName: "camera.fill")
                             .foregroundColor(.white)
                     }
                 }
             }
-            .fullScreenCover(isPresented: $showCapture) {
+            .fullScreenCover(isPresented: $viewModel.showCapture) {
                 CaptureFlowView()
             }
-        }
-    }
-
-    private func deleteItem(_ item: Item) {
-        withAnimation {
-            modelContext.delete(item)
         }
     }
 }

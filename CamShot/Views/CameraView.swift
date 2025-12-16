@@ -5,9 +5,9 @@
 //  Created by Elizbar Kheladze on 08/12/25.
 //
 
-import SwiftUI
-internal import AVFoundation
+import AVFoundation
 import Combine
+import SwiftUI
 
 class CameraModel: NSObject, ObservableObject {
     @Published var session = AVCaptureSession()
