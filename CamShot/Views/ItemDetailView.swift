@@ -152,7 +152,7 @@ private struct FlipCard<Front: View, Back: View>: View {
     
     // Animation state
     @State private var rotation: Double = 0
-    @GestureState private var pressing: Bool = false
+    @State private var pressing: Bool = false
     
     init(
         isFlipped: Binding<Bool>,
@@ -191,19 +191,17 @@ private struct FlipCard<Front: View, Back: View>: View {
         .onAppear {
             rotation = isFlipped ? 180 : 0
         }
-        .simultaneousGesture(
-            LongPressGesture(minimumDuration: 0.25)
-                .updating($pressing) { value, state, _ in
-                    state = value
-                }
-                .onEnded { _ in
-                    let generator = UIImpactFeedbackGenerator(style: .rigid)
-                    generator.impactOccurred()
-                    withAnimation(.easeInOut(duration: 0.35)) {
-                        isFlipped.toggle()
-                    }
-                }
-        )
+        .onLongPressGesture(minimumDuration: 0.25, perform: {
+            let generator = UIImpactFeedbackGenerator(style: .rigid)
+            generator.impactOccurred()
+            withAnimation(.easeInOut(duration: 0.35)) {
+                isFlipped.toggle()
+            }
+        }, onPressingChanged: { isPressing in
+            withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                pressing = isPressing
+            }
+        })
         .scaleEffect(pressing ? 0.98 : 1.0)
         .animation(.spring(response: 0.25, dampingFraction: 0.8), value: pressing)
     }
