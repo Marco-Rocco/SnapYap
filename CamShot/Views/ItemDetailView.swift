@@ -60,12 +60,6 @@ struct ItemDetailView: View {
                                     },
                                     back: {
                                         ZStack {
-                                            Text(Self.dateFormatter.string(from: item.timestamp))
-                                                .font(.system(size: 28, weight: .bold))
-                                                .foregroundColor(.black)
-                                                .padding(.leading, 20)
-                                                .padding(.bottom, 12)
-                                                .tag(item.id)
                                             PolaroidFrame(
                                                 image: uiImage,
                                                 audioData: item.audioData,
@@ -75,11 +69,18 @@ struct ItemDetailView: View {
                                                 enableShadow: false,
                                                 id: item.id
                                             ).scaleEffect(x: -1)
-                                                .opacity(0.1)
+                                                .opacity(0.3)
                                                 .overlay {
                                                     Color.white
                                                 }.opacity(0.6)
                                                 .clipShape(RoundedRectangle(cornerRadius: 10))
+                                            Text(Self.dateFormatter.string(from: item.timestamp))
+                                                .opacity(0.8)
+                                                .font(.system(size: 28, weight: .bold))
+                                                .foregroundColor(.black)
+                                                .padding(.leading, 20)
+                                                .padding(.bottom, 12)
+                                                .tag(item.id)
                                         }
                                     }
                                 )
