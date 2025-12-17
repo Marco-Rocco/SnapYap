@@ -210,7 +210,7 @@ struct CaptureFlowView: View {
     var audioControls: some View {
         VStack(spacing: 20) {
             if viewModel.isRecording {
-                Text("\(formatTime(viewModel.audioManager.currentTime)) / 00:30")
+                Text("\(formatTime(viewModel.currentTime)) / 00:30")
                     .font(.system(size: 14, weight: .medium, design: .monospaced))
                     .foregroundColor(.white)
                     .transition(.opacity)
@@ -262,6 +262,9 @@ struct CaptureFlowView: View {
             .disabled(viewModel.isRecording && !viewModel.canStopRecording)
         }
         .frame(height: 180)
+        .onDisappear {
+            viewModel.cleanup()
+        }
     }
 
     private func formatTime(_ time: Double) -> String {

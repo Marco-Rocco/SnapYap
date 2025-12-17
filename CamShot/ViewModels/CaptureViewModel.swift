@@ -17,11 +17,25 @@ class CaptureViewModel: ObservableObject {
     @Published var currentBlur: CGFloat = 30.0
     @Published var zoomLevel: Int = 1
     @Published var shouldDismiss = false
+    @Published var currentTime: TimeInterval = 0.0
 
     let audioManager = AudioManager()
+    private var cancellables = Set<AnyCancellable>()
+
+    init() {
+        audioManager.$currentTime
+            .receive(on: RunLoop.main)
+            .assign(to: \.currentTime, on: self)
+            .store(in: &cancellables)
+    }
 
     var canStopRecording: Bool {
-        return audioManager.currentTime >= 8.0
+        return currentTime >= 8.0
+    }
+
+    func cleanup() {
+        audioManager.stopPlayback()
+        _ = audioManager.stopRecording()
     }
 
     func startRecordingProcess() {
