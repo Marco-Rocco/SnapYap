@@ -68,14 +68,12 @@ struct ItemDetailView: View {
                                                 showAudioControls: true,
                                                 enableShadow: false,
                                                 id: item.id
-                                            ).scaleEffect(x: -1)
-                                                .opacity(0.3)
-                                                .overlay {
-                                                    Color.white
-                                                }.opacity(0.6)
-                                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                                            )
+                                            .overlay {
+                                                Color.white
+                                            }
+                                            .clipShape(RoundedRectangle(cornerRadius: 10))
                                             Text(Self.dateFormatter.string(from: item.timestamp))
-                                                .opacity(0.8)
                                                 .font(.system(size: 28, weight: .bold))
                                                 .foregroundColor(.black)
                                                 .tag(item.id)
