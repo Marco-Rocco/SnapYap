@@ -13,6 +13,12 @@ struct GalleryView: View {
     @Query(sort: \Item.timestamp, order: .reverse) private var items: [Item]
     @StateObject private var viewModel = GalleryViewModel()
 
+    let bgColor = Color.main
+    let darkGreen = Color.sub
+    let borderGreen = Color.darkerSub
+    let accentColor = Color.accent
+    let recordRed = Color.recording
+
     let columns = [
         GridItem(.flexible(), spacing: 16),
         GridItem(.flexible(), spacing: 16)
@@ -70,13 +76,21 @@ struct GalleryView: View {
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        viewModel.showCapture = true
-                    } label: {
-                        Image(systemName: "camera.fill")
-                            .foregroundColor(.white)
+                    Button { viewModel.showCapture = true } label: {
+                        ZStack {
+                            Circle()
+                                .fill(bgColor)
+                                .frame(width: 45, height: 45)
+                                .overlay(
+                                    Circle()
+                                        .stroke(borderGreen, lineWidth: 3)
+                                )
+
+                            Image(systemName: "camera.fill")
+                                .font(.system(size: 18))
+                        }
                     }
-                }
+                }.sharedBackgroundVisibility(.hidden)
             }
             .fullScreenCover(isPresented: $viewModel.showCapture) {
                 CaptureFlowView()
