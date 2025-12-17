@@ -11,6 +11,13 @@ import SwiftUI
 struct ItemDetailView: View {
     @Query(sort: \Item.timestamp, order: .reverse) private var items: [Item]
     @StateObject private var viewModel: ItemDetailViewModel
+    @Environment(\.dismiss) private var dismiss
+    
+    let bgColor = Color.main
+    let darkGreen = Color.sub
+    let borderGreen = Color.darkerSub
+    let accentColor = Color.accent
+    let recordRed = Color.recording
 
     let thumbnailSize: CGFloat = 40
     let thumbnailSpacing: CGFloat = 8
@@ -25,9 +32,32 @@ struct ItemDetailView: View {
         f.setLocalizedDateFormatFromTemplate("EEE d MMM, HH:mm")
         return f
     }()
+    
+    
+    private var customBackButton: some View {
+        Button {
+            dismiss()
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(darkGreen)
+                    .frame(width: 44, height: 44)
+                    .overlay(
+                        Circle()
+                            .stroke(borderGreen, lineWidth: 2)
+                    )
+
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.white)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+    
 
     var body: some View {
-        ZStack {
+        ZStack (alignment: .topLeading){
             Color.main.ignoresSafeArea()
 
             VStack(spacing: 0) {
@@ -134,11 +164,18 @@ struct ItemDetailView: View {
                 }
                 .frame(height: 60)
             }
+            
+            customBackButton
+                .padding(.leading, 20)
+                .padding(.top, 12)
+            
         }
-        .toolbarColorScheme(.dark, for: .navigationBar)
-        .toolbarBackground(.hidden, for: .navigationBar)
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
+        
+        }
     }
-}
+
 
 // MARK: - FlipCard inline view
 
